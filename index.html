@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kaçış Oyunu</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    #gameArea {
+      width: 100vw;
+      height: 100vh;
+      background: #111;
+      position: relative;
+      overflow: hidden;
+    }
+    #player {
+      width: 120px;
+      height: 50px;
+      background: lime;
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+    }
+    .falling {
+      width: 40px;
+      height: 40px;
+      background: red;
+      position: absolute;
+      top: 0;
+    }
+    #gameOver {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      color: white;
+      display: none;
+    }
+    #timer {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-size: 24px;
+      z-index: 10;
+    }
+    #startScreen, #retryBtn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      text-align: center;
+    }
+    button {
+      font-size: 24px;
+      padding: 10px 20px;
+    }
+    #retryBtn {
+      top: 60%;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameArea">
+    <div id="player"></div>
+    <div id="gameOver">GAME OVER</div>
+    <div id="timer">Süre: 00:00</div>
+    <div id="startScreen">
+      <h1>KAÇIŞ OYUNU</h1>
+      <button onclick="startGame()">BAŞLA</button>
+    </div>
+    <div id="retryBtn">
+      <button onclick="restartGame()">TEKRAR OYNA</button>
+    </div>
+  </div>
+
+  <script>
+    const gameArea = document.getElementById('gameArea');
+    const player = document.getElementById('player');
+    const gameOverText = document.getElementById('gameOver');
+    const timerElement = document.getElementById('timer');
+    let playerSpeed = 60;
+    let gameRunning = false;
+    let time = 0;
+    let timerInterval;
+
+    document.addEventListener('keydown', (e) => {
+      if (!gameRunning) return;
+
+      const left = player.offsetLeft;
+      if (e.key === 'ArrowLeft' && left > 0) {
+        player.style.left = left - playerSpeed + 'px';
+      } else if (e.key === 'ArrowRight' && left < window.innerWidth - player.offsetWidth) {
+        player.style.left = left + playerSpeed + 'px';
+      }
+    });
+
+    function createFallingObject() {
+      if (!gameRunning) return;
+
+      const obj = document.createElement('div');
+      obj.classList.add('falling');
+      obj.style.left = Math.random() * (window.innerWidth - 30) + 'px';
+      gameArea.appendChild(obj);
+
+      let fallSpeed = 10;
+      function fall() {
+        if (!gameRunning) return;
+
+        const top = obj.offsetTop;
+        obj.style.top = top + fallSpeed + 'px';
+
+        if (isColliding(obj, player)) {
+          gameOver();
+        } else if (top < window.innerHeight) {
+          requestAnimationFrame(fall);
+        } else {
+          obj.remove();
+        }
+      }
+      requestAnimationFrame(fall);
+    }
+
+    function isColliding(a, b) {
+      const aRect = a.getBoundingClientRect();
+      const bRect = b.getBoundingClientRect();
+
+      return !(
+        aRect.bottom < bRect.top ||
+        aRect.top > bRect.bottom ||
+        aRect.right < bRect.left ||
+        aRect.left > bRect.right
+      );
+    }
+
+    function gameOver() {
+      gameRunning = false;
+      gameOverText.style.display = 'block';
+      document.getElementById("retryBtn").style.display = "block";
+      clearInterval(timerInterval);
+      document.querySelectorAll('.falling').forEach(obj => obj.remove());
+      player.style.display = 'none';
+    }
+
+    function startGame() {
+      document.getElementById("startScreen").style.display = "none";
+      gameRunning = true;
+      time = 0;
+      timerElement.textContent = 'Süre: 00:00';
+      player.style.display = 'block';
+      startTimer();
+    }
+
+    function restartGame() {
+      document.querySelectorAll('.falling').forEach(obj => obj.remove());
+      player.style.left = '50%';
+      player.style.transform = 'translateX(-50%)';
+      gameOverText.style.display = 'none';
+      document.getElementById("retryBtn").style.display = "none";
+      startGame();
+    }
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        if (gameRunning) {
+          time++;
+          const minutes = Math.floor(time / 60);
+          const seconds = time % 60;
+          const formattedTime =
+            (minutes < 10 ? '0' + minutes : minutes) + ':' +
+            (seconds < 10 ? '0' + seconds : seconds);
+          timerElement.textContent = 'Süre: ' + formattedTime;
+        }
+      }, 1000);
+    }
+
+    setInterval(() => {
+      if (gameRunning) {
+        createFallingObject();
+      }
+    }, 300);
+  </script>
+</body>
+</html>
